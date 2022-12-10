@@ -13,7 +13,6 @@ void commands_execute (char* buff, uint8_t len) {
 
   lcd_put_cur(3, 0);
   lcd_send_string(commands_param_get(0));
-
   
   if (strcmp(commands_param_get(0), "SETTEMP") == 0)
   {  

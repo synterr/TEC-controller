@@ -8,6 +8,7 @@
 #include "uart.h"
 #include "i2c-lcd.h"
 #include "PCF8574.h"
+#include "MCP9808.h"
 #include "commands.h"
 
 void EXTI15_10_IRQHandler(void);
@@ -88,9 +89,11 @@ int main (void) {
   gpio_init_input(GPIO_PIN_BTN);
   
   PCF_Init();
+  MCP_Init();
+  
   UART2_init();
   uart_clear_buffer();
-  //spi_init();
+  ///////spi_init();
   gpio_up(GPIO_PIN_LED);
   gpio_down(GPIO_PIN_LED);
   
@@ -101,18 +104,22 @@ int main (void) {
   
   lcd_init();
   
+  
   while(1) {
     cnt++;
-
+  
     //UART2_SendChar('S'); // Start command for external app to send pixels data
 
 //    gpio_up(GPIO_PIN_LED);
 //    delay_nops(200*DLMUL);
 //    gpio_down(GPIO_PIN_LED);
-//    delay_nops(200*DLMUL);
+    delay_nops(10*DLMUL);
 
-//    lcd_put_cur(0, 0);
-//    lcd_send_string(uart_get_buffer());
+      char c[50]; //size of the number
+      sprintf(c, "%g", MCP_get_temp());
+      lcd_put_cur(0, 0);
+      lcd_send_string(c);
+      lcd_send_string("      ");
 
     
     if (uart_get_buffer_len() > 0 && uart_get_buffer()[uart_get_buffer_len() - 1] == '\0')

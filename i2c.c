@@ -24,9 +24,9 @@ void i2c_init(void)
 
 void i2c_start(void)
 {
-  I2C1->CR1 |= I2C_CR1_ACK;  // Enable the ACK
   I2C1->CR1 |= I2C_CR1_START;  // Generate START
   while (!(I2C1->SR1 & (1<<0)));  // Wait fror SB bit to set
+  I2C1->CR1 |= I2C_CR1_ACK;  // Enable the ACK. It's important to do this in last line
 }
 
 void i2c_write (uint8_t data)
