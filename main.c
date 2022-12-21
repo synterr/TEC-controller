@@ -10,6 +10,8 @@
 #include "PCF8574.h"
 #include "MCP9808.h"
 #include "commands.h"
+#include "regulator.h"
+#include "pwm.h"
 
 void EXTI15_10_IRQHandler(void);
 
@@ -91,6 +93,8 @@ int main (void) {
   PCF_Init();
   MCP_Init();
   
+  PWM_init();
+  
   UART2_init();
   uart_clear_buffer();
   ///////spi_init();
@@ -100,32 +104,51 @@ int main (void) {
   NVIC_EnableIRQ(EXTI15_10_IRQn);
   NVIC_EnableIRQ(USART2_IRQn);
   
-  long cnt = 0;
-  
   lcd_init();
   
-  
+  long cnt = 0;
   while(1) {
     cnt++;
-  
-    //UART2_SendChar('S'); // Start command for external app to send pixels data
-
-//    gpio_up(GPIO_PIN_LED);
-//    delay_nops(200*DLMUL);
-//    gpio_down(GPIO_PIN_LED);
-    delay_nops(10*DLMUL);
-
-      char c[50]; //size of the number
-      sprintf(c, "%g", MCP_get_temp());
-      lcd_put_cur(0, 0);
-      lcd_send_string(c);
-      lcd_send_string("      ");
-
     
-    if (uart_get_buffer_len() > 0 && uart_get_buffer()[uart_get_buffer_len() - 1] == '\0')
+    float PIDcontrol = 0;
+    //Regulator loop
+    if(cnt % 1000 == 0){
+      reg_curtemp_set(MCP_get_temp());
+      
+    }
+    //Display loop
+    if(cnt % 10000 == 0){
+      PIDcontrol = doPID(reg_curtemp_get(), reg_settemp_get());
+      if (PIDcontrol > 10)
+        PIDcontrol = 10;
+      if (PIDcontrol < -7)
+        PIDcontrol = -7;
+      PWM_set_val(600-60*PIDcontrol);
+      
+      char t[10]; //size of the number
+      gpio_up(GPIO_PIN_LED);
+      float_to_string(reg_curtemp_get(), t); 
+      lcd_put_cur(0, 0);
+      lcd_send_string("T-cur: ");
+      lcd_send_string(t);
+      lcd_send_string("      ");
+      float_to_string(PIDcontrol, t); 
+      lcd_put_cur(2, 0);
+      lcd_send_string("Error: ");
+      lcd_send_string(t);
+      lcd_send_string("      ");
+    }
+    if(cnt % 10000 != 0)
+      gpio_down(GPIO_PIN_LED);
+    
+    //UART buffer loop
+    if(cnt % 1000 == 0)
     {
-      commands_execute(uart_get_buffer(), uart_get_buffer_len());
-      uart_clear_buffer();
+      if (uart_get_buffer_len() > 0 && uart_get_buffer()[uart_get_buffer_len() - 1] == '\0')
+      {
+        commands_execute(uart_get_buffer(), uart_get_buffer_len());
+        uart_clear_buffer();
+      }
     }
   }
 }

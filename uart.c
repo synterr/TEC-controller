@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "stm32f4xx.h"                  // Device header
 #include "gpio.h"
 #include "uart.h"
@@ -69,6 +70,16 @@ void uart_clear_buffer(void){
   for(uint8_t i = 0; i < UART_BUFF_SIZE; i++)
     uart_buffer[i] = '\0';
   uart_buffer_len = 0;
+}
+
+void uart_send_string(char* buff, uint8_t len, bool end_string){
+  for(uint8_t i = 0; i < len; i++){
+    UART2_SendChar(buff[i]);
+    if (buff[i] == '\0')
+      return;
+  }
+  if (end_string)
+    UART2_SendChar('\0');
 }
 
 void USART2_IRQHandler(void) {
